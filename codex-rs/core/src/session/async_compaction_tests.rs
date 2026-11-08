@@ -15,6 +15,45 @@ use codex_protocol::protocol::TokenUsage;
 use core_test_support::responses;
 use pretty_assertions::assert_eq;
 
+#[test_case::test_case(44_999, 44_999, Some(60_000), Some(95_000), 75, false; "below configured budget threshold")]
+#[test_case::test_case(45_000, 45_000, Some(60_000), Some(95_000), 75, true; "at configured budget threshold")]
+#[test_case::test_case(71_249, 1_000, Some(60_000), Some(95_000), 75, false; "below usable model window threshold")]
+#[test_case::test_case(71_250, 1_000, Some(60_000), Some(95_000), 75, true; "usable window wins with a large prefix")]
+#[test_case::test_case(85_000, 45_000, Some(60_000), Some(120_000), 75, true; "body budget excludes initial prefix")]
+#[test_case::test_case(80_000, 40_000, Some(60_000), Some(120_000), 75, false; "prefix does not consume body budget")]
+#[test_case::test_case(45_000, 45_000, Some(60_000), None, 75, true; "configured budget without model window")]
+#[test_case::test_case(75_000, 75_000, None, Some(100_000), 75, true; "model window without configured budget")]
+#[test_case::test_case(75_000, 75_000, None, None, 75, false; "unknown limits")]
+#[test_case::test_case(30_000, 30_000, Some(60_000), Some(95_000), 50, true; "custom percentage")]
+#[test_case::test_case(59_999, 59_999, Some(60_000), Some(95_000), 100, false; "100 percent waits for limit")]
+#[test_case::test_case(60_000, 60_000, Some(60_000), Some(95_000), 100, true; "100 percent reaches limit")]
+#[test_case::test_case(75, 75, Some(101), None, 75, false; "fractional threshold rounds up")]
+#[test_case::test_case(76, 76, Some(101), None, 75, true; "fractional threshold reached")]
+fn background_threshold_follows_current_limits(
+    active_context_tokens: i64,
+    auto_compact_scope_tokens: i64,
+    auto_compact_scope_limit: Option<i64>,
+    full_context_window_limit: Option<i64>,
+    percent: u8,
+    expected: bool,
+) {
+    let status = super::super::context_window::ContextWindowTokenStatus {
+        active_context_tokens,
+        auto_compact_scope_tokens,
+        auto_compact_scope_limit,
+        full_context_window_limit,
+        base_window_tokens_remaining: None,
+        auto_compact_window_prefill_tokens: None,
+        full_context_window_limit_reached: false,
+        token_limit_reached: false,
+        turn_end_compaction_threshold_reached: false,
+    };
+    assert_eq!(
+        status.background_compaction_threshold_reached(percent),
+        expected
+    );
+}
+
 #[test_case::test_case(CompactionTrigger::Auto; "optional ready adoption")]
 #[test_case::test_case(CompactionTrigger::Manual; "manual ready reuse")]
 #[tokio::test]

@@ -4894,16 +4894,17 @@ async fn async_compaction_config() {
     use std::io::ErrorKind::InvalidInput;
 
     for (settings, expected) in [
-        ("[features]\nasync_compaction = true", Ok((true, 65))),
-        ("[features]\nasync_compaction = false", Ok((false, 65))),
-        ("[features.async_compaction]", Ok((false, 65))),
+        ("", Ok((true, 75))),
+        ("[features]\nasync_compaction = true", Ok((true, 75))),
+        ("[features]\nasync_compaction = false", Ok((false, 75))),
+        ("[features.async_compaction]", Ok((true, 75))),
         (
             "[features.async_compaction]\nenabled = true",
-            Ok((true, 65)),
+            Ok((true, 75)),
         ),
         (
             "[features.async_compaction]\nmodel_async_compact_threshold_percent = 80",
-            Ok((false, 80)),
+            Ok((true, 80)),
         ),
         (
             "[features.async_compaction]\nenabled = false\nmodel_async_compact_threshold_percent = 80",

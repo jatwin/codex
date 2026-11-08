@@ -3608,10 +3608,7 @@ async fn async_compaction_test(
                     .enable(feature)
                     .expect("enable scenario feature");
             }
-            config
-                .features
-                .enable(Feature::AsyncCompaction)
-                .expect("enable async compaction");
+            assert!(config.features.enabled(Feature::AsyncCompaction));
             config
                 .features
                 .disable(Feature::EnableRequestCompression)
@@ -4357,7 +4354,8 @@ async fn async_compaction_reuses_pending_work(
     let seed_tokens = if over_budget {
         2_000
     } else if has_background {
-        70_000
+        // Above 75% of the configured 60k budget, below 75% of the model window.
+        46_000
     } else {
         10_000
     };
@@ -4399,7 +4397,7 @@ async fn async_compaction_reuses_pending_work(
         responses.push(immediate(response(
             "second",
             ev_function_call_with_namespace("team", "collaboration", "list_agents", "{}"),
-            /*tokens*/ if over_budget { 9_000 } else { 91_000 },
+            /*tokens*/ if over_budget { 9_000 } else { 61_000 },
         )));
     }
     if !succeeds {
@@ -4432,6 +4430,7 @@ async fn async_compaction_reuses_pending_work(
             vec![]
         },
         move |config| {
+            config.model_auto_compact_token_limit = Some(60_000);
             if over_budget {
                 config.async_compaction_threshold_percent = 1;
                 config.model_auto_compact_token_limit = Some(5_000);
@@ -4578,9 +4577,9 @@ async fn async_compaction_reuses_pending_work(
         } else if manual {
             (3_000, seed_tokens + if succeeds { 3_000 } else { 6_000 })
         } else if succeeds {
-            (94_000, 164_000)
+            (64_000, seed_tokens + 64_000)
         } else {
-            (97_000, 167_000)
+            (67_000, seed_tokens + 67_000)
         },
     );
 
