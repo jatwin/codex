@@ -19,6 +19,24 @@ pub(crate) struct ContextWindowTokenStatus {
     pub(crate) turn_end_compaction_threshold_reached: bool,
 }
 
+impl ContextWindowTokenStatus {
+    pub(crate) fn background_compaction_threshold_reached(&self, percent: u8) -> bool {
+        [
+            (
+                self.auto_compact_scope_tokens,
+                self.auto_compact_scope_limit,
+            ),
+            (self.active_context_tokens, self.full_context_window_limit),
+        ]
+        .into_iter()
+        .any(|(used, limit)| {
+            limit.is_some_and(|limit| {
+                i128::from(used) * 100 >= i128::from(limit) * i128::from(percent)
+            })
+        })
+    }
+}
+
 fn tokens_remaining(limit: Option<i64>, used: i64) -> Option<i64> {
     limit.map(|limit| limit.saturating_sub(used).max(0))
 }

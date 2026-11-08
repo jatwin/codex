@@ -69,15 +69,9 @@ pub(super) async fn maybe_start(
         || token_status.token_limit_reached
         || (matches!(phase, CompactionPhase::PostTurn)
             && token_status.turn_end_compaction_threshold_reached)
-        || step_context
-            .settings
-            .model_info
-            .resolved_context_window()
-            .is_none_or(|limit| {
-                i128::from(token_status.active_context_tokens) * 100
-                    < i128::from(limit)
-                        * i128::from(turn_context.config.async_compaction_threshold_percent)
-            })
+        || !token_status.background_compaction_threshold_reached(
+            turn_context.config.async_compaction_threshold_percent,
+        )
     {
         return;
     }

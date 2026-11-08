@@ -237,7 +237,7 @@ pub use windows_sandbox_config::windows_mxc_allowed_by_config;
 
 const DEFAULT_IGNORE_LARGE_UNTRACKED_DIRS: i64 = 200;
 const DEFAULT_IGNORE_LARGE_UNTRACKED_FILES: i64 = 10 * 1024 * 1024;
-const DEFAULT_ASYNC_COMPACTION_THRESHOLD_PERCENT: u8 = 65;
+const DEFAULT_ASYNC_COMPACTION_THRESHOLD_PERCENT: u8 = 75;
 
 /// Signals that a public config selected the retired `untrusted` approval policy.
 #[derive(Debug, thiserror::Error)]
@@ -676,7 +676,7 @@ pub struct Config {
     /// Zero disables turn-end compaction.
     pub model_post_turn_compact_threshold_percent: u8,
 
-    /// Percentage of the model's full context window at which background compaction starts.
+    /// Percentage of the auto-compaction budget or usable model window that starts background compaction.
     pub async_compaction_threshold_percent: u8,
 
     /// Key into the model_providers map that specifies which provider to use.
